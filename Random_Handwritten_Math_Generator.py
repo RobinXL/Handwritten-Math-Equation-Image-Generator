@@ -2,6 +2,7 @@ import cv2, os, random, argparse, logging, sys
 from PIL import Image
 import numpy as np
 from datetime import datetime
+import helper
 
 def process_args(args):
     parser = argparse.ArgumentParser(description='This is for generate random handwritten math equation')
@@ -18,42 +19,6 @@ def process_args(args):
     parameters = parser.parse_args(args)
     return parameters
 
-def append_images(images, direction='horizontal',
-                  bg_color=(255,255,255), aligment='center'):
-
-    widths, heights = zip(*(i.size for i in images))
-
-    if direction=='horizontal':
-        new_width = sum(widths)
-        new_height = max(heights)
-    else:
-        new_width = max(widths)
-        new_height = sum(heights)
-
-    new_im = Image.new('RGB', (new_width, new_height), color=bg_color)
-
-
-    offset = 0
-    for im in images:
-        if direction=='horizontal':
-            y = 0
-            if aligment == 'center':
-                y = int((new_height - im.size[1])/2)
-            elif aligment == 'bottom':
-                y = new_height - im.size[1]
-            new_im.paste(im, (offset, y))
-            offset += im.size[0]
-        else:
-            x = 0
-            if aligment == 'center':
-                x = int((new_width - im.size[0])/2)
-            elif aligment == 'right':
-                x = new_width - im.size[0]
-            new_im.paste(im, (x, offset))
-            offset += im.size[1]
-
-    return new_im
-
 def img_resize_open(imagepath):
     baseheight = 60
     if lst[lst_path.index(imagepath)] in operation_lst+symbol:
@@ -69,22 +34,6 @@ def img_resize_open(imagepath):
     wsize = int((float(img.size[0])*float(hpercent)))
     img = img.resize((wsize,baseheight), Image.ANTIALIAS)
     return img
-
-def is_number(s):
-    try:
-        float(s)
-        return True
-    except ValueError:
-        pass
- 
-    try:
-        import unicodedata
-        unicodedata.numeric(s)
-        return True
-    except (TypeError, ValueError):
-        pass
-    
-    return False
 
 lst = []
 lst_path = []
@@ -104,7 +53,7 @@ def main(args):
             , str(round(random.uniform(0, 99),1)), str(random.choice(symbol)), str(round(random.uniform(0, 999),2))]
     
     for elem in equation:
-        if is_number(elem):
+        if helper.is_number(elem):
             for ele in elem:
                 lst.append(ele)
             continue
@@ -119,11 +68,11 @@ def main(args):
     image = img_resize_open(lst_path[0])
     for i in range(1,len(lst)):
         if lst[i] in operation_lst+symbol:
-            image = append_images([image, img_resize_open(lst_path[i])], direction='horizontal', aligment='center',
+            image = helper.append_images([image, img_resize_open(lst_path[i])], direction='horizontal', aligment='center',
                             bg_color=(255, 255, 255))
             continue
 
-        image = append_images([image, img_resize_open(lst_path[i])], direction='horizontal', aligment='bottom',
+        image = helper.append_images([image, img_resize_open(lst_path[i])], direction='horizontal', aligment='bottom',
                             bg_color=(255, 255, 255))
     filename = 'Math' + str(datetime.now())[0:-7].replace('-','').replace(' ','').replace(':','') + '.jpg'
     
