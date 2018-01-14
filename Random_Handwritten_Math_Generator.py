@@ -85,7 +85,7 @@ def main(args):
 
             image = helper.append_images([image, img_resize_open(lst_path[i], lst, lst_path)], direction='horizontal', aligment='bottom',
                                 bg_color=(255, 255, 255))
-        filename = 'Math'+str(batch)+'_' + str(datetime.now())[0:-7].replace('-','').replace(' ','').replace(':','') + '.jpg'
+        filename = 'Math'+str(batch)+'_' + str(datetime.now())[0:-7].replace('-','').replace(' ','').replace(':','') + '.png'
 
         old_size = image.size
         new_size = (old_size[0]+pad_size*2, old_size[1]+pad_size*2)
@@ -96,7 +96,7 @@ def main(args):
         new_im.save(os.path.join(output_path,filename))
 
         #output latex as .txt
-        with open(os.path.join(output_path_txt, filename).replace('.jpg','')+".txt", "w") as text_file:
+        with open(os.path.join(output_path_txt, filename).replace('.png','')+".txt", "w") as text_file:
             text_file.write(' '.join(lst).replace('times', '\\\\ t i m e s').replace('div', 
                                                 '\\\\ d i v').replace('neq', '\\\\ n e q'))
 
