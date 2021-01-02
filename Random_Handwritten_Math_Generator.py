@@ -81,6 +81,9 @@ def random_equation():
                   , str(third_number)]
     return equation
 
+def random_date():
+    return '{}/{}/{}'.format(random.randint(1,31), random.randint(1,12), '2021')
+
 operation_lst = ['times', '+', '-', 'div']
 symbol = ['=', 'neq']
 
@@ -99,6 +102,10 @@ def main(args):
     if output_path_txt == 'default':
         output_path_txt = output_path
     
+    for path in [output_path, output_path_txt]:
+        if not os.path.exists(path):
+            os.makedirs(path, exist_ok = True)
+    
     for batch in range(0, batch_size):
         pad_size = random.choice(random_pad_size)
         lst = []
@@ -110,7 +117,8 @@ def main(args):
                   , str(random.choice(symbol))
                   , str(round(random.uniform(0, 999),2))]
         '''
-        equation = random_equation()
+        # equation = random_equation()
+        equation = random_date()
         for elem in equation:
             if helper.is_number(elem):
                 for ele in elem:
@@ -119,7 +127,7 @@ def main(args):
             lst.append(elem)
 
         for elem in lst:
-            img_dir = 'data/'+elem.replace('.','dot')
+            img_dir = 'data/'+elem.replace('.','dot').replace('/','slash')
             img = random.choice([x for x in os.listdir(img_dir)
                        if os.path.isfile(os.path.join(img_dir, x)) and x != '.DS_Store'])
             lst_path.append(os.path.join(img_dir,img))
@@ -141,8 +149,8 @@ def main(args):
         old_size = image.size
         new_size = (old_size[0]+pad_size*2, old_size[1]+pad_size*2)
         new_im = Image.new("RGB", new_size, color=(255,255,255)) 
-        new_im.paste(image, ((new_size[0]-old_size[0])/2,
-                          (new_size[1]-old_size[1])/2))
+        new_im.paste(image, (int((new_size[0]-old_size[0])/2),
+                             int((new_size[1]-old_size[1])/2)))
         
         open_cv_image = np.array(new_im) 
         
@@ -160,7 +168,7 @@ def main(args):
             
             #handle when image is wider than background
             if (width_bg-start_margin) < width:
-                print '    too wide, resize ...'
+                print('    too wide, resize ...')
                 open_cv_image = helper.image_resize(open_cv_image, width=(width_bg-start_margin))
                 height, width, channels = open_cv_image.shape
             crop_bkgd = picked_background[start_margin:height+start_margin, start_margin:width+start_margin]
@@ -173,7 +181,7 @@ def main(args):
         
         #new_im.save(os.path.join(output_path,filename))
         latex_str = ' '.join(lst).replace('times', '\\times').replace('div', '\\div').replace('neq', '\\neq')
-        print '    Generated latex: ', latex_str
+        print('    Generated latex: ', latex_str)
         with open(os.path.join(output_path_txt, filename).replace('.png','')+".txt", "w") as text_file:
             text_file.write(latex_str)
 
@@ -181,7 +189,7 @@ def main(args):
 
     
 if __name__ == '__main__':
-    print 'Job started ...'
+    print('Job started ...')
     main(sys.argv[1:])
-    print 'Job done!'
+    print('Job done!')
 
