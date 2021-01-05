@@ -1,4 +1,4 @@
-import cv2, os, random, argparse, logging, sys, glob
+import cv2, os, random, argparse, logging, sys, glob, re
 from PIL import Image
 import numpy as np
 from datetime import datetime
@@ -14,7 +14,7 @@ def process_args(args):
                         type=str, default='default',
                         help=('Output text file path, note: default set to same as image output path'))
     parser.add_argument('--random-pad-size', dest='random_pad_size',
-                        type=list, default=range(12,45),
+                        type=list, default=range(5,100),
                         help=('Pad the image to the top, left, bottom, right with whitespace of size random.'))
     parser.add_argument('--backgrounded', dest='backgrounded',
                         type=bool, default=False,
@@ -26,7 +26,7 @@ def process_args(args):
                         type=int, default=1,
                         help=('Generate a batch of random images'))
     parser.add_argument('--random_text_size', dest='random_text_size',
-                        type=list, default=range(80,150),
+                        type=list, default=range(45,80),
                         help=('add randomness to text size'))
     parser.add_argument('--downsample', dest='downsample',
                         type=int, default=1,
@@ -82,7 +82,7 @@ def random_equation():
     return equation
 
 def random_date():
-    return '{}/{}/{}'.format(random.randint(1,31), random.randint(1,12), '2021')
+    return '{}/{}/{}'.format(str(random.randint(1,31)).zfill(2), str(random.randint(1,12)).zfill(2), '22')
 
 operation_lst = ['times', '+', '-', 'div']
 symbol = ['=', 'neq']
@@ -107,19 +107,34 @@ def main(args):
             os.makedirs(path, exist_ok = True)
     
     for batch in range(0, batch_size):
-        pad_size = random.choice(random_pad_size)
+        # pad_size = random.choice(random_pad_size)
+        pad_top_bot = random.randint(0, 15)
+        pad_left, pad_right, pad_top, pad_bot = random.choice(random_pad_size), random.choice(random_pad_size), \
+                                                pad_top_bot, pad_top_bot
         lst = []
         lst_path = []
-        '''
-        equation = [str(round(random.uniform(0, 99),1))
-                  , str(random.choice(operation_lst))
-                  , str(round(random.uniform(0, 99),1))
-                  , str(random.choice(symbol))
-                  , str(round(random.uniform(0, 999),2))]
-        '''
         # equation = random_equation()
         equation = random_date()
-        for elem in equation:
+        # equation = '10/20/2021'
+
+        list_element = []
+        if random.randint(0, 1):
+            equ_split = re.split('(10|20|30|00)', equation)
+            doubles = ['10', '20', '30', '00']
+            for equ_el in equ_split:
+                if equ_el in doubles:
+                    list_element.append(equ_el)
+                else:
+                    if not equ_el:
+                        continue
+                    else:
+                        list_element += list(equ_el)
+        else:
+            list_element = list(equation)
+
+
+        # for elem in equation:
+        for elem in list_element:
             if helper.is_number(elem):
                 for ele in elem:
                     lst.append(ele)
@@ -144,13 +159,15 @@ def main(args):
             image = helper.append_images([image, img_resize_open(lst_path[i], lst, lst_path, standard_height)],
                                           direction='horizontal', aligment='bottom',
                                           bg_color=(255, 255, 255))
-        filename = 'Math'+str(batch)+'_' + str(datetime.now())[0:-7].replace('-','').replace(' ','').replace(':','') + '.png'
+        filename = 'MathGenerator'+str(batch)+'_' + str(datetime.now())[0:-7].replace('-','').replace(' ','').replace(':','') + '.png'
 
         old_size = image.size
-        new_size = (old_size[0]+pad_size*2, old_size[1]+pad_size*2)
+        # new_size = (old_size[0]+pad_size*2, old_size[1]+pad_size*2)
+        new_size = (old_size[0] + pad_left + pad_right, old_size[1] + pad_top + pad_bot)
         new_im = Image.new("RGB", new_size, color=(255,255,255)) 
-        new_im.paste(image, (int((new_size[0]-old_size[0])/2),
-                             int((new_size[1]-old_size[1])/2)))
+        # new_im.paste(image, (int((new_size[0]-old_size[0])/2),
+        #                      int((new_size[1]-old_size[1])/2)))
+        new_im.paste(image, (int(pad_left), int(pad_top)))
         
         open_cv_image = np.array(new_im) 
         
@@ -177,12 +194,18 @@ def main(args):
             
         if downsample != 1:
             open_cv_image = helper.image_resize(open_cv_image, width=int(width/downsample))
-        cv2.imwrite(os.path.join(output_path,filename), open_cv_image)
+        cv2.cvtColor(open_cv_image, cv2.COLOR_BGR2RGB)
+        Image.fromarray(open_cv_image).save(os.path.join(output_path,filename))
+        # cv2.imwrite(os.path.join(output_path,filename), open_cv_image)
         
         #new_im.save(os.path.join(output_path,filename))
-        latex_str = ' '.join(lst).replace('times', '\\times').replace('div', '\\div').replace('neq', '\\neq')
+        # latex_str = ' '.join(lst).replace('times', '\\times').replace('div', '\\div').replace('neq', '\\neq')
+        latex_str = ''.join(lst).replace('times', '\\times').replace('div', '\\div').replace('neq', '\\neq')
+        latex_str = '{}\t{}'.format(os.path.basename(filename), latex_str)
         print('    Generated latex: ', latex_str)
-        with open(os.path.join(output_path_txt, filename).replace('.png','')+".txt", "w") as text_file:
+        # with open(os.path.join(output_path_txt, filename).replace('.png','')+".txt", "w") as text_file:
+        #     text_file.write(latex_str)
+        with open(os.path.join(output_path, filename).replace('.png','')+".txt", "w") as text_file:
             text_file.write(latex_str)
 
 
